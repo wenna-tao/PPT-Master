@@ -1,4 +1,4 @@
-# PPT-Master · Peachworks 演示助手 v0.5
+# PPT-Master · Peachworks 学习工作台 v0.6
 
 保留原站 DDL 规划器，逐步增加材料提取、要求核对、演讲设定、大纲编辑和可编辑 PPTX 导出。中文优先，兼顾电脑、平板与手机。
 
@@ -11,11 +11,44 @@
 - 填写日期、听众、时长、语言，以及自己的观点与证据。
 - 建立结构模板，编辑 1–16 页标题、要点、演讲备注和来源，调整顺序与配色。
 - 导出真正可编辑的 PPTX、Markdown 大纲及 JSON 演示草稿。
-- 可选 Gemini / DeepSeek 服务端辅助整理与大纲；没有配置时明确显示“AI 未启用”。**没有 OpenAI API 调用或 SDK。**
+- 可选 Gemini / DeepSeek 服务端辅助整理与大纲；没有配置时明确显示“AI 未启用”。PPT 接口不会调用 OpenAI 或 Claude。作业辅导有独立的四家服务商接口，默认全部关闭。
+
+## 作业辅导：四家 AI 独立选择
+
+网站的 `#tutor` 区域支持文字与单张图片提问，提供 DeepSeek、Gemini、Claude、ChatGPT（OpenAI API）四个选项。各家对话在本页内分开，刷新即清空；不持久化问题、答案、图片或访问码。仅用户点击发送并同意后，才发送当前问题、当前附图及该 AI 最近最多两轮文字。
+
+**默认没有任何模型被启用。没有真实密钥时，页面明确显示“未启用”，不会生成假答案或尝试其他提供商。** ChatGPT 选项表示 OpenAI API 接入，不是 ChatGPT 网页账号的登录或转发。
+
+### 在原 Netlify 项目启用
+
+1. 按下方步骤把原项目连接到 GitHub，发布这次源码。拖放静态 ZIP 不会部署问答后端。
+2. 在 Netlify 服务端环境变量 / Functions 范围中设置 `TUTOR_ENABLED=true` 和独立的 `TUTOR_ACCESS_CODE`，不要将访问码或密钥写入公开文件。
+3. 只给计划开放的服务商填写对应的 `TUTOR_<PROVIDER>_API_KEY`、`TUTOR_<PROVIDER>_MODEL`，并设置其 `TUTOR_<PROVIDER>_ENABLED=true`。PROVIDER 为 `DEEPSEEK`、`GEMINI`、`CLAUDE` 或 `OPENAI`。模型 ID 由维护者从自己的账户选择，页面不能传入任意模型名。
+4. 具体模型支持图片时，再设置 `TUTOR_<PROVIDER>_VISION=true`。文本模型请保持 `false`。不要假设同一家服务商所有模型都支持图片。
+5. 重新部署，在 `/api/tutor/status` 核对状态。标为已配置只表示配置完整，不能证明密钥、模型权限、余额或图片能力已实测成功。
+6. 在 Netlify 网站使用访问码发送一题，确认该服务商实际回答；检查 Netlify 的 `peachworks-tutor-usage` Blobs 存储。密钥不要在聊天中发送给维护工具。
+
+PPT 的 `AI_PROVIDER` 与作业辅导完全分开：PPT 仍只能使用 Gemini / DeepSeek。仅填写作业辅导 OpenAI 密钥不会使 PPT 调用 OpenAI。
+
+### 费用限制与配额
+
+- 用户选定 OpenAI 的上限为**全站每天最多 10 次**，不是每位访客 10 次。`TUTOR_OPENAI_DAILY_LIMIT` 只能进一步降低，写入更大的数值仍最多 10 次。其他服务商默认也各 10 次，维护者可用相应变量调整到 1–100 次。
+- 每次最多 800 输出 token，包含提供商计入该上限的内部生成 token；模型可能在生成完可见答案之前耗尽上限。输入另计费：当前问题最多 2000 字符，历史最多 4000 字符，不发送 DDL、PPT 内容或其他 AI 的对话。
+- 单张图片先在本机压到最长边 1280 像素、JPEG 不超过 300 KB；原文件限 5 MB。请发送前核对题目文字仍清楚。服务端再次验证格式、大小和图像头尺寸，不接受远程图片 URL。
+- 次数按 `Europe/London` 日期统计，每天重置。采用 Netlify Blobs **站点级强一致存储与 ETag 条件写入**；在付费请求前原子预占次数。并发请求、函数冷启动、网页刷新及重新部署不会重置当日记录。
+- 一次请求使用唯一标识，同日同服务商重复标识拒绝再次调用；不自动重试模型、不自动切换服务商、不并行询问多家。失败和超时也占一次，避免重试增加开销；请求已发送但浏览器没收到结果时，次数仍可能已扣除。
+- 配额存储不可用、内容无效、未同意、访问码错误或服务商未配置时不会发起模型调用。存储故障采取停止调用的方式，不回退为函数内存计数。
+- 这仍是次数与长度限制，**不是固定金额或整个服务商账户的月度费用上限**。模型单价、输入和图片费用另计；Netlify 托管与存储也可能计费。请单独管理服务商额度，关闭 `TUTOR_ENABLED` 停止全部新问答，或只关闭某一家。
+
+### 验证与数据边界
+
+当前使用模拟响应验证四家请求格式、PPT 隔离、输入与图片限制、并发配额、重放与错误处理；没有真实密钥时不声称完成真实服务商连通验证。API 限制并不保证答案正确，图片识别和推导仍需核对。回答达到长度上限会明确标记可能不完整。用户代码仅作为文字发送，不在服务器执行。图片不写入 Blobs，Blobs 仅保存每日计数和不含题目的随机请求标识；模型提供商仍会处理收到的内容，Netlify 仍可能保存常规访问日志。
+
+本机 `npm run dev` 可预览未配置状态。完整配额依赖 Netlify 环境：直接本机启动且没有 Netlify Blobs 上下文时，即使填入密钥也会停止调用。真实接入请用 Netlify 部署预览或已配置 Blobs 上下文的 Netlify Dev 验证；不要用内存计数替代线上配额。
 
 ## 本地运行
 
-需要 Node.js 22 或更新版本。解压并进入项目目录后运行：
+需要 Node.js 22.12 或更新版本。解压并进入项目目录后运行：
 
 ```sh
 npm ci --ignore-scripts
@@ -132,3 +165,11 @@ npm run dev
 - [Gemini generateContent 结构化输出](https://ai.google.dev/gemini-api/docs/generate-content/structured-output)
 - [DeepSeek JSON 输出](https://api-docs.deepseek.com/guides/json_mode/)
 - [DeepSeek Chat Completions 参数](https://api-docs.deepseek.com/api/create-chat-completion/)
+
+## 作业辅导官方接口参考
+
+- [OpenAI 图片输入](https://developers.openai.com/api/docs/guides/images-vision)
+- [Gemini 图片理解](https://ai.google.dev/gemini-api/docs/image-understanding)
+- [Claude 图片输入](https://platform.claude.com/docs/en/build-with-claude/vision)
+- [DeepSeek Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/)
+- [Netlify Blobs 原子条件写入](https://docs.netlify.com/build/data-and-storage/netlify-blobs/)
