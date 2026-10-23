@@ -1,4 +1,4 @@
-export const TUTOR_PROVIDERS=[{id:'deepseek',label:'DeepSeek',mark:'D',hint:'文字、推导与代码'},{id:'gemini',label:'Gemini',mark:'✦',hint:'拍题与图片问答'}];
+export const TUTOR_PROVIDERS=[{id:'deepseek',label:'DeepSeek',mark:'D',hint:'文字、推导与代码'},{id:'gemini',label:'Gemini',mark:'✦',hint:'图片问答 · 仅管理者',ownerOnly:true}];
 export const TUTOR_LIMITS={question:2000,historyMessages:4,historyItem:1600,historyTotal:4000,imageBytes:300000,imageSide:1280,output:800};
 export function tutorError(message,status=400,code='INVALID_INPUT'){return Object.assign(new Error(message),{status,code});}
 export function validateTutor(body){
