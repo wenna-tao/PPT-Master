@@ -26,7 +26,8 @@
 3. 将私密配置安全地复制至 Netlify 的服务端环境变量 / Functions 范围。`TUTOR_ADMIN_ACCESS_CODE` 至少 32 字符，不能与访客码相同。不要上传 `.env`，也不要把密钥发到聊天中。
 4. 只给要开放的提供商设置 `TUTOR_DEEPSEEK_*` 或 `TUTOR_GEMINI_*` 中的 `API_KEY`、`MODEL`、`ENABLED=true`；模型 ID 应在自己的账户中确认。确认具体模型支持图片后才设 `VISION=true`，默认关闭图片能力。PPT 的 `AI_PROVIDER` 与辅导单独配置。
 5. 确认提供商支持的地区和使用条件后才设置 `TUTOR_ENABLED=true` 并重新部署。检查 `/api/tutor/status`，再在网页中用访问码实际提问一题。状态“已配置”只表示配置完整，不证明真实密钥、余额、模型权限或图片能力已验证。
-6. 检查 Netlify 站点级 `peachworks-tutor-usage` Blobs 存储是否正常。没有 Blobs 上下文时停止调用，不用本机内存冒充线上配额。
+6. 若提示密钥无效（401）、余额/计费问题（402）、权限或地区限制（403）、模型/参数问题（400/404/422）、频率受限（429），按页面提示到官方平台或 Netlify 配置处理。页面只显示固定说明与数字状态，不显示服务商原始错误正文或密钥。
+7. 检查 Netlify 站点级 `peachworks-tutor-usage` Blobs 存储是否正常。没有 Blobs 上下文时停止调用，不用本机内存冒充线上配额。
 
 ### 自己优先、朋友限额
 
