@@ -2,6 +2,7 @@ import {createHash,timingSafeEqual} from 'node:crypto';
 import {MAX_TEXT, assertText, validateRequirements, validateContext, validateSlides, requirementSchema, outlineSchema} from '../../public/shared/model.js';
 import {createDeck} from '../../public/shared/deck.js';
 import {providerConfig,providerRequest} from '../lib/providers.mjs';
+import {makeTutorHandler} from '../lib/tutor-handler.mjs';
 
 const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{...headers,'Content-Type':'application/json; charset=utf-8'}});
@@ -17,9 +18,11 @@ async function readJson(req) {
   try{return JSON.parse(new TextDecoder().decode(bytes));}catch{throw new Error('请求内容不是有效 JSON');}
 }
 
-export function makeHandler({env=process.env,fetchImpl=fetch,deckFactory=createDeck}={}) {
+export function makeHandler({env=process.env,fetchImpl=fetch,deckFactory=createDeck,tutorStoreFactory,tutorNow}={}) {
+  const tutor=makeTutorHandler({env,fetchImpl,storeFactory:tutorStoreFactory,now:tutorNow});
   return async function handler(req) {
     const path=new URL(req.url).pathname;
+    if(path.startsWith('/api/tutor/'))return tutor(req);
     try {
       if(path==='/api/status'&&req.method==='GET')return json({aiConfigured:configured(env),provider:providerConfig(env).label,mode:configured(env)?'available':'manual',codeRequired:true});
       if(!['/api/assist','/api/export'].includes(path))return json({error:'接口不存在'},404);

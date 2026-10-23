@@ -1,4 +1,4 @@
-// Only these two fixed upstreams are allowed. No OpenAI SDK or endpoint is used.
+// PPT routes only: Gemini / DeepSeek. Tutor providers live in a separate module.
 export function providerConfig(env) {
   const provider=env.AI_PROVIDER;
   if(provider==='gemini')return {provider,label:'Gemini',key:env.GEMINI_API_KEY,model:env.GEMINI_MODEL};
