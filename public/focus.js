@@ -1,3 +1,4 @@
+import './focus-background.js';
 import {FOCUS_KEY,initialFocus,validMinutes,remainingMs,startFocus,pauseFocus,resetFocus,setFocusMinutes,tickFocus,hydrateFocus,formatFocus,todayFocus} from './shared/focus-model.js';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
