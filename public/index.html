@@ -65,6 +65,7 @@ input,textarea,select{max-width:100%}
 
 </style>
 <link rel="stylesheet" href="./assistant.css">
+<link rel="stylesheet" href="./focus.css">
 </head>
 <body>
 <a class="skip-link" href="#planner">跳转至 DDL 工作台</a>
@@ -88,6 +89,18 @@ input,textarea,select{max-width:100%}
    <article class="insight-card"><small>7 天内待办</small><b id="stat-soon">0</b><span id="stat-overdue">0 件逾期</span></article>
    <article class="insight-card insight-rate"><small>总体完成度</small><div class="rate-ring" id="rate-ring" role="progressbar" aria-label="项目完成度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-label">0%</span></div><span>每完成一步都值得记录</span></article>
   </div>
+  <section class="peach-focus" id="focus-timer" aria-labelledby="focus-title">
+    <div class="focus-topline"><div><span class="focus-eyebrow">PEACH TIME / 专注慢慢长大</span><h3 id="focus-title">给眼前的事，一段完整的时间。</h3></div><div class="focus-pair"><span class="focus-today">今日完成 <strong id="focus-today-minutes">0</strong> 分钟 · <span id="focus-today-sessions">0</span> 轮</span><span class="focus-mini-note">只在本机记录</span></div></div>
+    <div class="focus-layout"><div class="focus-garden" aria-hidden="true"><img class="focus-tree" src="./focus-tree.svg" alt="" width="300" height="280"><p>ONE THING AT A TIME</p></div>
+      <div class="focus-clock-wrap"><div class="focus-status" data-focus-status>准备好了，就从这一轮开始</div><div class="focus-clock" data-focus-clock role="timer" aria-live="off" aria-label="剩余 50 分钟">50:00</div><div class="focus-session-label" data-focus-task>为自己留出 50 分钟</div><div class="focus-controls"><button class="focus-start" type="button" data-focus-action="toggle">开始专注</button><button class="focus-secondary" type="button" data-focus-action="reset">重置</button></div><button class="focus-open" id="focus-open" type="button">放大专注视图 ↗</button><div class="focus-progress" role="progressbar" aria-label="本轮专注进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-focus-progress><span></span></div></div>
+      <div class="focus-settings"><div class="field"><label for="focus-task">这轮想完成的小任务</label><select id="focus-task"><option value="">只专注，暂不关联任务</option></select></div>
+        <div class="focus-duration-settings"><div class="field"><label for="focus-minutes">专注时长</label><div class="focus-duration-row"><input id="focus-minutes" type="number" inputmode="numeric" min="25" max="120" step="1" value="50" required aria-describedby="focus-duration-hint"><span id="focus-duration-hint">分钟 · 25–120</span></div></div><div class="focus-presets" role="group" aria-label="专注时长快捷选择"><button type="button" data-focus-minutes="25" aria-pressed="false">25</button><button type="button" data-focus-minutes="50" aria-pressed="true">50</button><button type="button" data-focus-minutes="90" aria-pressed="false">90</button><button type="button" data-focus-minutes="120" aria-pressed="false">120</button></div><label for="focus-range" class="sr-only">拖动调整专注分钟数</label><input id="focus-range" type="range" min="25" max="120" step="1" value="50"></div>
+        <div class="focus-options"><label><input type="checkbox" id="focus-awake" checked>保持屏幕常亮</label><label><input type="checkbox" id="focus-sound">结束时轻声提示</label></div><p id="focus-awake-status" class="focus-option-status">开始后尝试保持常亮</p><details><summary>搭配白噪音的小提示</summary><p>可在 B 站手动开启画中画，再回到这里放大倒计时。小窗由 B 站与设备提供；切换应用时本轮会继续计时。常亮和结束提示受浏览器、锁屏及省电设置影响；回到页面会按设备时间校准。</p></details>
+      </div>
+    </div><div class="focus-message" data-focus-announcement role="status" aria-live="polite"></div><div class="focus-foot"><span>放下手机，做眼前的一小步。回来时，你的时间还在。</span><a href="https://www.bilibili.com/" target="_blank" rel="noopener noreferrer">去 B 站选白噪音 ↗</a></div>
+  </section>
+  <dialog id="focus-screen" class="focus-screen" aria-labelledby="focus-screen-title"><div class="focus-screen-head"><strong id="focus-screen-title">🍑 PEACH TIME / 专注时刻</strong><button type="button" id="focus-screen-close" aria-label="退出专注视图">×</button></div><div class="focus-screen-main"><img class="focus-tree" src="./focus-tree.svg" alt="一棵陪伴专注的桃树" width="300" height="280"><div class="focus-status" data-focus-status>准备好了，就从这一轮开始</div><div class="focus-clock" data-focus-clock role="timer" aria-live="off" aria-label="剩余 50 分钟">50:00</div><p class="focus-session-label" data-focus-task>为自己留出 50 分钟</p><div class="focus-controls"><button type="button" class="focus-start" data-focus-action="toggle">开始专注</button><button type="button" class="focus-secondary" data-focus-action="reset">重置</button></div><div class="focus-progress" role="progressbar" aria-label="放大视图专注进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-focus-progress><span></span></div><p class="focus-message" data-focus-announcement role="status" aria-live="polite"></p></div><div class="focus-screen-bottom"><p>一件小事，也值得认真对待。</p><p>右下方留给你的白噪音小窗。<br>画中画请在 B 站手动开启。</p></div></dialog>
+  <dialog id="focus-reset-dialog" class="focus-reset-dialog" aria-labelledby="focus-reset-title"><h3 id="focus-reset-title">结束这轮，重新开始？</h3><p>本轮尚未完成的计时将重置，已完成的专注记录会保留。也可以先暂停，稍后继续。</p><div class="focus-controls"><button type="button" class="focus-secondary" data-focus-action="cancel-reset">继续这一轮</button><button type="button" class="focus-secondary" data-focus-action="confirm-reset">结束并重置</button></div></dialog>
   <div class="dashboard-grid">
    <div class="panel planner-editor"><div class="panel-top"><div><div class="flag" style="font-size:10px">ADD A STEP</div><h3>加一个小任务 ✍️</h3></div><span class="tag">一次一件</span></div>
     <form id="task-form"><div class="field"><label for="task-name">任务名称</label><input id="task-name" required maxlength="100" placeholder="例如：复查实验报告的结论"></div>
@@ -249,7 +262,9 @@ function renderWeek(){const board=$('#week-board');board.replaceChildren();const
  if(!items.length)card.append(el('div','week-empty','暂无任务'));
  for(const t of items.slice(0,3)){const item=el('div','week-item'+(t.done?' done':''),t.name);item.title=t.notes||t.name;card.append(item);}if(items.length>3)card.append(el('div','week-more',`另有 ${items.length-3} 项`));board.append(card);
  }}
-function render(){renderProjectSelect();renderOverview();renderTaskList();renderFocus();renderWeek();}
+function sharePlannerFocusTasks(){document.dispatchEvent(new CustomEvent('peachworks:planner-state',{detail:{projectId:project().id,projectName:project().name,tasks:thisTasks().filter(t=>!t.done).map(t=>({id:t.id,title:t.name}))}}));}
+document.addEventListener('peachworks:planner-request',sharePlannerFocusTasks);
+function render(){renderProjectSelect();renderOverview();renderTaskList();renderFocus();renderWeek();sharePlannerFocusTasks();}
 function openProjectDialog(mode){editingProject=mode==='edit'?project().id:null;const p=editingProject?project():null;$('#project-dialog-title').textContent=p?'编辑项目':'创建新项目';$('#project-name').value=p?.name||'';$('#project-detail').value=p?.description||'';$('#project-deadline').value=localDeadlineValue(p?.deadline||null);$('#project-dialog').showModal();$('#project-name').focus();}
 function openTaskDialog(t){editingTask=t.id;$('#edit-name').value=t.name;$('#edit-date').value=t.date;$('#edit-priority').value=t.priority;$('#edit-category').value=t.category;$('#edit-minutes').value=t.minutes||25;$('#edit-notes').value=t.notes||'';$('#task-dialog').showModal();$('#edit-name').focus();}
 function download(name,body,type){const blob=new Blob([body],{type});const url=URL.createObjectURL(blob);const anchor=el('a');anchor.href=url;anchor.download=name;document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);}
@@ -310,4 +325,5 @@ $('#menu-btn').addEventListener('click',()=>{const nav=$('#navlinks');nav.classL
 </script>
 
 <script type="module" src="./assistant.js"></script>
+<script type="module" src="./focus.js"></script>
 </body></html>
