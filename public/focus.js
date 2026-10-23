@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const baseTitle=document.title;
 let focus=initialFocus(),planner={projectId:'',projectName:'',tasks:[]},wake=null,wakePending=false,audio=null,lastClock='',lastStatus='',lastStats='',storageAvailable=true;
 const modal=$('#focus-screen'),resetDialog=$('#focus-reset-dialog'),zone=$('#focus-timer');
-const landscapeView=matchMedia('(orientation: landscape) and (max-width: 1180px) and (max-height: 650px), (orientation: landscape) and (pointer: coarse) and (max-width: 1440px)');
+const landscapeView=matchMedia('(orientation: landscape)');
 let autoLandscapeOpen=false;
 function syncLandscape(){
   if(landscapeView.matches&&focus.status==='running'&&!modal.open&&!document.querySelector('dialog[open]')){modal.showModal();autoLandscapeOpen=true;}
