@@ -1,0 +1,18 @@
+{
+  "name": "peachworks-presentation-lab",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node --env-file-if-exists=.env scripts/dev.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "cfb": "1.2.2",
+    "jszip": "3.10.1",
+    "pdfjs-dist": "5.4.624",
+    "pptxgenjs": "4.0.1"
+  }
+}
