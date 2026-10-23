@@ -25,7 +25,12 @@ export function makeTutorHandler({env=process.env,fetchImpl=fetch,storeFactory=q
   try{quota=await reserveTutor(await storeFactory(),{provider:config.id,limit:config.limit,requestId:clean.requestId,now:now(),role});}catch(e){if(e.code)throw e;throw tutorError('用量服务暂时不可用，本次不会调用 AI。',503,'QUOTA_UNAVAILABLE');}
   const charged=role==='owner'?'':'本次已计入次数。';
   let result;try{result=await tutorRequest(config,clean,fetchImpl);}catch{throw tutorError('AI 连接超时或暂时不可用。'+charged+'不会自动重试。',504,'UPSTREAM_FAILED');}
-  if(!result.ok)throw tutorError(result.status===429?'服务商额度或频率受限。'+charged:'AI 未返回可用回答，请精简问题或联系维护者检查模型配置。'+charged,502,'UPSTREAM_FAILED');
+  if(!result.ok){
+   // Return only a fixed explanation and numeric status; never expose provider response bodies.
+   const messages={401:['PROVIDER_AUTH','API 密钥无效或已失效，请维护者在 Netlify 更新所选 AI 的密钥。'],402:['PROVIDER_BALANCE','所选 AI 的 API 账户余额不足或尚未开通计费，请在服务商官方平台检查余额与账单。'],403:['PROVIDER_ACCESS','服务商拒绝访问，请维护者检查 API 权限和支持地区。'],400:['PROVIDER_CONFIG','服务商不接受当前请求，请维护者检查模型名称、图片能力与接口参数。'],404:['PROVIDER_CONFIG','服务商未找到当前模型或接口，请维护者检查模型配置。'],422:['PROVIDER_CONFIG','服务商不接受当前参数，请维护者检查模型和图片能力。'],429:['PROVIDER_RATE_LIMIT','服务商额度或频率受限，请稍后手动重试。']};
+   const [code,message]=result.invalidResponse?['PROVIDER_RESPONSE','服务商未返回可显示的回答，可能受到输出上限、内容限制或响应格式影响。']:messages[result.status]||['UPSTREAM_FAILED','AI 服务暂时未能完成请求，请稍后手动重试。'];
+   const error=tutorError(message+charged+'不会自动重试。',502,code);if(!result.invalidResponse)error.providerStatus=result.status;throw error;
+  }
   return json({provider:config.id,label:config.label,answer:result.text,truncated:result.truncated,quota},200,responseHeaders);
- }catch(e){return json({error:e.status?e.message:'内容格式无效，请检查后重试。',code:e.code||'INVALID_INPUT',...((quota||e.quota)?{quota:quota||e.quota}:{})},e.status||400,responseHeaders);}
+ }catch(e){return json({error:e.status?e.message:'内容格式无效，请检查后重试。',code:e.code||'INVALID_INPUT',...(Number.isInteger(e.providerStatus)?{providerStatus:e.providerStatus}:{}),...((quota||e.quota)?{quota:quota||e.quota}:{})},e.status||400,responseHeaders);}
 };}

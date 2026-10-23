@@ -27,8 +27,8 @@ export async function tutorRequest(config,input,fetchImpl){
  const response=await fetchImpl(url,{...common,headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body)});
  if(!response.ok)return {ok:false,status:response.status};
  const data=await response.json();let text='',truncated=false;
- if(config.id==='gemini'){const c=data.candidates?.[0];if(!['STOP','MAX_TOKENS'].includes(c?.finishReason))return {ok:false,status:422};text=(c.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');truncated=c.finishReason==='MAX_TOKENS';}
- if(config.id==='deepseek'){const c=data.choices?.[0];if(!['stop','length'].includes(c?.finish_reason))return {ok:false,status:422};text=c.message?.content;truncated=c.finish_reason==='length';}
- if(typeof text!=='string'||!text.trim()||text.length>12000)return {ok:false,status:422};
+ if(config.id==='gemini'){const c=data.candidates?.[0];if(!['STOP','MAX_TOKENS'].includes(c?.finishReason))return {ok:false,status:422,invalidResponse:true};text=(c.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');truncated=c.finishReason==='MAX_TOKENS';}
+ if(config.id==='deepseek'){const c=data.choices?.[0];if(!['stop','length'].includes(c?.finish_reason))return {ok:false,status:422,invalidResponse:true};text=c.message?.content;truncated=c.finish_reason==='length';}
+ if(typeof text!=='string'||!text.trim()||text.length>12000)return {ok:false,status:422,invalidResponse:true};
  return {ok:true,text:text.trim(),truncated};
 }
