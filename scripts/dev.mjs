@@ -4,7 +4,7 @@ import {resolve,extname} from 'node:path';
 import {Readable} from 'node:stream';
 import handler from '../netlify/functions/peach.mjs';
 const root=resolve('dist'),port=Number(process.env.PORT||4173);
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.txt':'text/plain; charset=utf-8'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.txt':'text/plain; charset=utf-8','.svg':'image/svg+xml'};
 const windows=new Map();
 http.createServer(async(req,res)=>{
   try{
