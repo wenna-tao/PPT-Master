@@ -11,51 +11,39 @@
 - 填写日期、听众、时长、语言，以及自己的观点与证据。
 - 建立结构模板，编辑 1–16 页标题、要点、演讲备注和来源，调整顺序与配色。
 - 导出真正可编辑的 PPTX、Markdown 大纲及 JSON 演示草稿。
-- 可选 Gemini / DeepSeek 服务端辅助整理与大纲；没有配置时明确显示“AI 未启用”。PPT 接口不会调用 OpenAI 或 Claude。作业辅导有独立的四家服务商接口，默认全部关闭。
+- 可选 Gemini / DeepSeek 服务端辅助整理与大纲；没有配置时明确显示“AI 未启用”。PPT 接口不会调用 OpenAI 或 Claude。作业辅导有独立的 DeepSeek / Gemini 接口，默认全部关闭。
 
-## 作业辅导：四家 AI 独立选择
+## 作业辅导：DeepSeek / Gemini
 
-网站的 `#tutor` 区域支持文字与单张图片提问，提供 DeepSeek、Gemini、Claude、ChatGPT（OpenAI API）四个选项。各家对话在本页内分开，刷新即清空；不持久化问题、答案、图片或访问码。仅用户点击发送并同意后，才发送当前问题、当前附图及该 AI 最近最多两轮文字。
+`#tutor` 支持文字与单张图片提问，只有 DeepSeek、Gemini 两个选项。两家的对话在本页内分开，刷新清空；不持久化问题、答案、图片或访问码。仅主动点击发送并同意后，才发送当前问题、当前附图和该 AI 最近最多两轮完整文字。
 
-**默认没有任何模型被启用。没有真实密钥时，页面明确显示“未启用”，不会生成假答案或尝试其他提供商。** ChatGPT 选项表示 OpenAI API 接入，不是 ChatGPT 网页账号的登录或转发。
+**默认两家均未启用。没有真实密钥时明确显示“未启用”，不会生成假答案、自动重试或切换服务商。** 根据用户最终决定，已移除 ChatGPT / Claude 的页面入口、后台适配器、配置项和调用路径；过期配置或伪造请求不能重新启用。相应的 7 人阈值、4 次降额和浏览器人数统计也已移除。本站不转发个人 ChatGPT 订阅、网页账号或登录 Cookie。
 
 ### 在原 Netlify 项目启用
 
-1. 按下方步骤把原项目连接到 GitHub，发布这次源码。拖放静态 ZIP 不会部署问答后端。
-2. 先运行 `node scripts/tutor-secrets.mjs`，在被 Git 忽略的 `.env` 中生成随机常规访问码、独立管理码与 Cookie 签名秘密；不会打印秘密，也不会开启付费调用。免费期设置 `TUTOR_TRIAL_MODE=true`，将约定的试用码只填写在私密的 `TUTOR_TRIAL_ACCESS_CODE`。实际约定码不包含在源码、示例和 ZIP 中。
-3. 将这些设置安全地复制到 Netlify 服务端环境变量 / Functions 范围；`TUTOR_ADMIN_ACCESS_CODE` 与 `TUTOR_SESSION_SECRET` 至少 32 字符且管理码不能与试用码相同。准备好真实密钥与地区资格后才设 `TUTOR_ENABLED=true`。不要将 `.env` 上传至 GitHub、静态站或聊天。
-4. 只给计划开放的服务商填写对应的 `TUTOR_<PROVIDER>_API_KEY`、`TUTOR_<PROVIDER>_MODEL`，并设置其 `TUTOR_<PROVIDER>_ENABLED=true`。PROVIDER 为 `DEEPSEEK`、`GEMINI`、`CLAUDE` 或 `OPENAI`。模型 ID 由维护者从自己的账户选择，页面不能传入任意模型名。
-5. 具体模型支持图片时，再设置 `TUTOR_<PROVIDER>_VISION=true`。文本模型请保持 `false`。不要假设同一家服务商所有模型都支持图片。
-6. 重新部署，在 `/api/tutor/status` 核对状态。标为已配置只表示配置完整，不能证明密钥、模型权限、余额或图片能力已实测成功。
-7. 在 Netlify 网站使用访问码发送一题，确认该服务商实际回答；检查 Netlify 的 `peachworks-tutor-usage` Blobs 存储。密钥不要在聊天中发送给维护工具。
+1. 将原 Netlify 项目连接到 GitHub，发布源码。拖放静态 ZIP 不会部署问答后端。
+2. 运行 `node scripts/tutor-secrets.mjs`，在被 Git 忽略的 `.env` 中生成随机常规访问码和独立管理码，不打印秘密、不开启付费调用。免费期设 `TUTOR_TRIAL_MODE=true`，把约定试用码只填写在私密的 `TUTOR_TRIAL_ACCESS_CODE`；约定码不包含在源码、示例或 ZIP 中。
+3. 将私密配置安全地复制至 Netlify 的服务端环境变量 / Functions 范围。`TUTOR_ADMIN_ACCESS_CODE` 至少 32 字符，不能与访客码相同。不要上传 `.env`，也不要把密钥发到聊天中。
+4. 只给要开放的提供商设置 `TUTOR_DEEPSEEK_*` 或 `TUTOR_GEMINI_*` 中的 `API_KEY`、`MODEL`、`ENABLED=true`；模型 ID 应在自己的账户中确认。确认具体模型支持图片后才设 `VISION=true`，默认关闭图片能力。PPT 的 `AI_PROVIDER` 与辅导单独配置。
+5. 确认提供商支持的地区和使用条件后才设置 `TUTOR_ENABLED=true` 并重新部署。检查 `/api/tutor/status`，再在网页中用访问码实际提问一题。状态“已配置”只表示配置完整，不证明真实密钥、余额、模型权限或图片能力已验证。
+6. 检查 Netlify 站点级 `peachworks-tutor-usage` Blobs 存储是否正常。没有 Blobs 上下文时停止调用，不用本机内存冒充线上配额。
 
-PPT 的 `AI_PROVIDER` 与作业辅导完全分开：PPT 仍只能使用 Gemini / DeepSeek。仅填写作业辅导 OpenAI 密钥不会使 PPT 调用 OpenAI。
+### 自己优先、朋友限额
 
-### 管理者、朋友与免费期
+- 用户不用登录 AI 账号，凭访问码提问。免费期使用配置好的固定试用码；结束免费期时运行 `node scripts/tutor-secrets.mjs --end-trial`，把新随机 `TUTOR_ACCESS_CODE` 和 `TUTOR_TRIAL_MODE=false` 更新至 Netlify 后重新部署，旧试用码失效。管理码不改变。
+- 自己在同一输入框填写独立管理码，点击“验证访问码”。管理者不受访客每日次数限制，不扣朋友额度；身份只能由服务端验证，页面参数不能冒充。仍遵守单次长度、授权、重放、平台频率与提供商余额限制；此权限不预留提供商容量或账户余额。
+- DeepSeek、Gemini **各为全站访客每天共享最多 10 次**，不是每人 10 次。`TUTOR_<PROVIDER>_DAILY_LIMIT` 只能降至 1–10，超大配置仍不超过 10。按 `Europe/London` 日期重置。
+- 不再统计人数，不设置匿名识别 Cookie，不收集 IP 指纹。每日配额只保存不含题目的随机请求 ID；管理者使用单独的逐请求去重记录。升级兼容旧额度，保留已有当日用量，并在下一次成功写入时移除旧人数字段。
+- 采用 Netlify Blobs 站点级强一致读取和 ETag 原子条件写入，**先预占、再发付费请求**。刷新、冷启动或重新部署不重置当日次数。失败和超时也占一次，重复请求 ID 拒绝再次调用。存储故障停止调用，没有自动重试、模型切换或付费故障转移。
+- 每次最多 800 输出 token；内部生成 token 也可能占用提供商的上限，回答可能不完整。输入单独计费：问题最多 2000 字符，历史最多 4000、每条最多 1600，超长整轮省略，不切断公式或代码，不发送 DDL/PPT 数据。
+- 单图原文件限 5 MB，本机转换为最长边 1280 像素、JPEG 不超过 300 KB；服务端再验证大小、格式和图像头尺寸，不接收远程图片 URL。发送前确认文字清晰。
+- 次数限制不是固定金额预算。API 另行计费，不使用个人聊天订阅；Netlify 托管/存储也可能计费。关闭 `TUTOR_ENABLED` 可停止新问答；模型没有默认 ID，所有开关默认关闭。
 
-- 访客不需要登录 AI 账号；使用试用码并主动提问。管理者在同一输入框填写独立管理码并点击“验证访问码”，不受访客每日次数限制，不消耗访客共享额度，也不计入试用人数。管理码只能由服务端识别，不能通过页面参数冒充。
-- 管理者仍遵守单次输入/输出长度、同源、授权、重放与平台频率限制；API 的余额和服务商频率限制依然适用。这里的优先是免除访客额度限制，并不预留服务商容量或账户余额。若要隔离个人预算，应在提供商处另设项目或密钥和预算。
-- 免费期结束时运行 `node scripts/tutor-secrets.mjs --end-trial`，将 `TUTOR_TRIAL_MODE=false` 与新随机 `TUTOR_ACCESS_CODE` 更新至 Netlify 并重新部署，旧试用码随即失效。脚本不改已有管理码、签名秘密或 API 开关。不自动按日期轮换。
-- 仓库私有仅隐藏源码，不等于网站访问保护。本方案保护问答接口，静态页面本身可以浏览。请勿共享管理码、API key、ChatGPT 会话 Cookie 或网页账号。本项目使用的 API 另行计费，不会使用 ChatGPT/Claude 订阅额度。OpenAI 另有面向部分官方参与应用的订阅授权功能，本项目没有接入资格或授权，不将个人订阅作为朋友共用接口。
-- 在启用任何提供商前，按其当前官方地区、账户和终端用户规则确认可用性。**境外服务器不自动解除终端用户的地区限制**，本站不承诺大陆免 VPN 使用。OpenAI 官方当前不支持向未列出地区提供 API；因此不能将这个入口作为向大陆用户提供 ChatGPT 的方案。Claude 也必须检查其当时生效的官方支持地区；不提供代理账号或绕过地区检查的配置。
+### 访问与验证边界
 
-### 费用限制与配额
+仓库私有只隐藏源码，不等于网站访问保护；这里保护问答接口，静态页面可以浏览。境外部署不自动改变提供商的终端用户地区规则。DeepSeek / Gemini 的实际网络、地区资格、密钥和模型可用性须各自验证，**未验证时不承诺国内免 VPN 稳定可用**。
 
-- 起步时四家服务商各为**全站访客每天共享最多 10 次**，不是每人 10 次。累计第 8 个独立试用浏览器提交有效且已授权的问题时，ChatGPT / Claude 的每日共享上限降为 **4 次**；Gemini / DeepSeek 保持各 10 次。环境变量 `TUTOR_<PROVIDER>_DAILY_LIMIT` 只能再降低，不能超过这些上限。累计阈值一经触发持续生效，不因次日或重新部署恢复。
-- 无注册时只能近似统计浏览器，不是人头。签名、HttpOnly、Secure、SameSite=Strict 的一年期 Cookie 用于匿名识别；最多保留前 8 个随机浏览器 ID，不采集 IP 指纹。清 Cookie / 换浏览器可能重复计数，多人共用浏览器可能少计。仅验证访问码、浏览页面、无效输入不会计入人数；第 8 个有效提交即使被当日额度拒绝，也会触发规则。当日已经超过 4 次时不会追溯撤销，后续调用停止。
-- 阈值、访客注册与四家每日额度在同一个强一致原子状态中更新，避免第 8 人与并发调用之间的竞态。管理者使用单独的逐请求去重记录，不限制每日请求总数。
-- 每次最多 800 输出 token，包含提供商计入该上限的内部生成 token；模型可能在生成完可见答案之前耗尽上限。输入另计费：当前问题最多 2000 字符，历史最多 4000 字符、每条最多 1600 字符；超长轮次整轮省略，不截断公式或代码，页面会提示本次携带的完整轮次数，不发送 DDL、PPT 内容或其他 AI 的对话。
-- 单张图片先在本机压到最长边 1280 像素、JPEG 不超过 300 KB；原文件限 5 MB。请发送前核对题目文字仍清楚。服务端再次验证格式、大小和图像头尺寸，不接受远程图片 URL。
-- 次数按 `Europe/London` 日期统计，每天重置。采用 Netlify Blobs **站点级强一致存储与 ETag 条件写入**；在付费请求前原子预占次数。并发请求、函数冷启动、网页刷新及重新部署不会重置当日记录。
-- 一次请求使用唯一标识，同日同服务商重复标识拒绝再次调用；不自动重试模型、不自动切换服务商、不并行询问多家。失败和超时也占一次，避免重试增加开销；请求已发送但浏览器没收到结果时，次数仍可能已扣除。
-- 配额存储不可用、内容无效、未同意、访问码错误或服务商未配置时不会发起模型调用。存储故障采取停止调用的方式，不回退为函数内存计数。
-- 这仍是次数与长度限制，**不是固定金额或整个服务商账户的月度费用上限**。模型单价、输入和图片费用另计；Netlify 托管与存储也可能计费。请单独管理服务商额度，关闭 `TUTOR_ENABLED` 停止全部新问答，或只关闭某一家。
-
-### 验证与数据边界
-
-当前使用模拟响应验证四家请求格式、PPT 隔离、输入与图片限制、并发配额、重放与错误处理；没有真实密钥时不声称完成真实服务商连通验证。API 限制并不保证答案正确，图片识别和推导仍需核对。回答达到长度上限会明确标记可能不完整。用户代码仅作为文字发送，不在服务器执行。图片不写入 Blobs，Blobs 仅保存最多 8 个匿名浏览器 ID、每日计数、不含题目的随机请求标识及管理者逐请求去重标识；模型提供商仍会处理收到的内容，Netlify 仍可能保存常规访问日志。
-
-本机 `npm run dev` 可预览未配置状态。完整配额依赖 Netlify 环境：直接本机启动且没有 Netlify Blobs 上下文时，即使填入密钥也会停止调用。真实接入请用 Netlify 部署预览或已配置 Blobs 上下文的 Netlify Dev 验证；不要用内存计数替代线上配额。
+当前适配器、费用控制和管理权限通过明确标注的模拟响应验证，未完成真实提供商或已部署 Blobs 付费调用验证。没有密钥时不声称 AI 已能回答。AI 不能保证答案正确；条件不足时询问补充，禁止考试作弊/隐瞒作者身份的要求只给概念辅导。用户代码作为文字发送，不在服务器执行。模型处理收到的内容，Netlify 仍可能保留常规访问日志；本站不把题目或图片写入 Blobs。
 
 ## 本地运行
 
@@ -179,10 +167,6 @@ npm run dev
 
 ## 作业辅导官方接口参考
 
-- [OpenAI 图片输入](https://developers.openai.com/api/docs/guides/images-vision)
 - [Gemini 图片理解](https://ai.google.dev/gemini-api/docs/image-understanding)
-- [Claude 图片输入](https://platform.claude.com/docs/en/build-with-claude/vision)
 - [DeepSeek Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/)
-- [OpenAI API 官方支持地区](https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories)
-- [Claude API 官方支持地区入口](https://support.claude.com/en/articles/8116515-where-is-the-claude-api-supported)
 - [Netlify Blobs 原子条件写入](https://docs.netlify.com/build/data-and-storage/netlify-blobs/)
