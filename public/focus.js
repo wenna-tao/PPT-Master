@@ -1,9 +1,21 @@
+import './focus-background.js';
+import './focus-display.js';
 import {FOCUS_KEY,initialFocus,validMinutes,remainingMs,startFocus,pauseFocus,resetFocus,setFocusMinutes,tickFocus,hydrateFocus,formatFocus,todayFocus} from './shared/focus-model.js';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const baseTitle=document.title;
 let focus=initialFocus(),planner={projectId:'',projectName:'',tasks:[]},wake=null,wakePending=false,audio=null,lastClock='',lastStatus='',lastStats='',storageAvailable=true;
 const modal=$('#focus-screen'),resetDialog=$('#focus-reset-dialog'),zone=$('#focus-timer');
+const landscapeView=matchMedia('(orientation: landscape)');
+let autoLandscapeOpen=false;
+function syncLandscape(){
+  if(landscapeView.matches&&focus.status==='running'&&!modal.open&&!document.querySelector('dialog[open]')){modal.showModal();autoLandscapeOpen=true;}
+  else if(!landscapeView.matches&&autoLandscapeOpen&&modal.open){modal.close();autoLandscapeOpen=false;}
+}
+landscapeView.addEventListener('change',syncLandscape);
+modal.addEventListener('close',()=>{autoLandscapeOpen=false;});
+document.addEventListener('peachworks:display-change',()=>{autoLandscapeOpen=false;});
+
 function announce(text,error=false){$$('[data-focus-announcement]').forEach(n=>{n.textContent=text;n.classList.toggle('focus-error',error);});}
 function save(){
   try{localStorage.setItem(FOCUS_KEY,JSON.stringify(focus));storageAvailable=true;}
@@ -109,7 +121,7 @@ function toggle(){
   }
   try{
     focus=startFocus(focus,Date.now(),crypto.randomUUID?.()||`focus_${Date.now()}_${Math.random().toString(36).slice(2)}`,selectedTask());
-    save();paint(true);syncWake();prepareChime();announce(storageAvailable?'这一轮开始了。切换应用时会继续计时，回来后会自动校准。':'本轮已开始，但浏览器无法保存记录，请保持页面打开。',!storageAvailable);
+    save();paint(true);syncWake();syncLandscape();prepareChime();announce(storageAvailable?'这一轮开始了。切换应用时会继续计时，回来后会自动校准。':'本轮已开始，但浏览器无法保存记录，请保持页面打开。',!storageAvailable);
   }catch(e){announce(e.message,true);}
 }
 $$('[data-focus-action]').forEach(button=>button.addEventListener('click',()=>{
@@ -144,6 +156,6 @@ window.addEventListener('storage',e=>{
   }
 });
 window.addEventListener('pagehide',releaseWake);
-paint(true);syncWake();
+paint(true);syncWake();syncLandscape();
 if(focus.status==='completed')announce('上一轮专注已完成 🍑 完成记录已保留，准备好后可以再来一轮。');
 setInterval(()=>advance(),500);
