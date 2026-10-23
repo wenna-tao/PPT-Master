@@ -6,7 +6,7 @@ const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{stat
 async function readBody(req){if(!req.headers.get('content-type')?.startsWith('application/json'))throw tutorError('请发送 JSON 请求。',415);if(Number(req.headers.get('content-length')||0)>460000)throw tutorError('问题或图片过大。',413);const reader=req.body?.getReader();if(!reader)throw tutorError('问题为空。');const chunks=[];let length=0;for(;;){const {value,done}=await reader.read();if(done)break;length+=value.byteLength;if(length>460000){await reader.cancel();throw tutorError('问题或图片过大。',413);}chunks.push(value);}try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw tutorError('问题内容格式无效。');}}
 export function makeTutorHandler({env=process.env,fetchImpl=fetch,storeFactory=quotaStore,now=()=>Date.now()}={}){return async function(req){
  const path=new URL(req.url).pathname,configs=tutorConfigs(env);
- if(path==='/api/tutor/status'&&req.method==='GET')return json({providers:configs.map(({id,label,enabled,vision,limit})=>({id,label,enabled,vision,limit,maxOutputTokens:800})),resetZone:'Europe/London',codeRequired:true});
+ if(path==='/api/tutor/status'&&req.method==='GET')return json({providers:configs.map(({id,label,enabled,vision,limit,ownerOnly})=>({id,label,enabled,vision,limit,ownerOnly:ownerOnly===true,maxOutputTokens:800})),resetZone:'Europe/London',codeRequired:true});
  if(!['/api/tutor/ask','/api/tutor/access'].includes(path))return json({error:'接口不存在。'},404);
  if(req.method!=='POST')return json({error:'仅支持 POST。'},405);
  let quota,responseHeaders={};
@@ -20,7 +20,7 @@ export function makeTutorHandler({env=process.env,fetchImpl=fetch,storeFactory=q
    return json({role,quotas:Object.fromEntries(configs.map(c=>[c.id,tutorQuota(state,{provider:c.id,limit:c.limit,role,now:now()})]))},200,responseHeaders);
   }
   const body=await readBody(req);if(body.consent!==true)throw tutorError('请先同意将本次问题、附图与最近两轮对话发送给所选 AI。');
-  const clean=validateTutor(body),config=configs.find(c=>c.id===clean.provider);if(!config.enabled)throw tutorError('所选 AI 尚未启用，不会切换到其他服务商。',503,'PROVIDER_DISABLED');
+  const clean=validateTutor(body),config=configs.find(c=>c.id===clean.provider);if(config.ownerOnly&&role!=='owner')throw tutorError('Gemini 仅限管理者使用，请先验证自己的管理码。',403,'OWNER_ONLY');if(!config.enabled)throw tutorError('所选 AI 尚未启用，不会切换到其他服务商。',503,'PROVIDER_DISABLED');
   clean.image=validateTutorImage(clean.image);if(clean.image&&!config.vision)throw tutorError('当前模型未启用图片问答。请改用文字，或手动选择支持图片的 AI。');
   try{quota=await reserveTutor(await storeFactory(),{provider:config.id,limit:config.limit,requestId:clean.requestId,now:now(),role});}catch(e){if(e.code)throw e;throw tutorError('用量服务暂时不可用，本次不会调用 AI。',503,'QUOTA_UNAVAILABLE');}
   const charged=role==='owner'?'':'本次已计入次数。';
