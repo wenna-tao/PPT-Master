@@ -62,7 +62,7 @@ input,textarea,select{max-width:100%}
 @supports(padding:max(0px)){.shell{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}.navlinks{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}}
 @media(max-width:660px){input,select,textarea{font-size:16px!important}}
 @media(prefers-reduced-motion:reduce){.progressbar div{transition:none!important}}
-.planner-recovery{margin:0 0 16px}.planner-recovery p{margin:6px 0 10px}
+.planner-recovery{margin:0 0 16px}.planner-recovery p{margin:6px 0 10px}.backup-actions [hidden]{display:none!important}
 
 </style>
 <link rel="stylesheet" href="./assistant.css">
@@ -120,7 +120,7 @@ input,textarea,select{max-width:100%}
     <div class="tabbar filters" role="group" aria-label="任务筛选"><button type="button" class="filter" data-filter="all" aria-pressed="true">全部</button><button type="button" class="filter" data-filter="active" aria-pressed="false">未完成</button><button type="button" class="filter" data-filter="due" aria-pressed="false">即将到期</button><button type="button" class="filter" data-filter="done" aria-pressed="false">已完成</button></div>
     <div id="task-list" class="task-list v03-list" aria-live="polite"></div>
     <div class="planner-footer"><span id="task-summary" class="hint">任务在当前设备上保存</span><button type="button" class="btn sm" id="clear-done">清理已完成</button></div>
-    <div class="backup-actions"><button type="button" class="btn sm" id="export-json">↓ 全部备份 JSON</button><button type="button" class="btn sm" id="export-csv">↓ 当前项目 CSV</button><button type="button" class="btn sm" id="export-ics">▦ 日历 .ics</button><label for="import-json" class="btn sm" style="cursor:pointer">↑ 导入备份</label><input type="file" id="import-json" accept="application/json,.json" class="sr-only-file"></div>
+    <div class="backup-actions"><button type="button" class="btn sm" id="export-json">↓ 全部备份 JSON</button><button type="button" class="btn sm" id="export-csv">↓ 当前项目 CSV</button><button type="button" class="btn sm" id="export-ics">▦ 日历 .ics</button><label for="import-json" class="btn sm" style="cursor:pointer">↑ 导入备份</label><input type="file" id="import-json" accept="application/json,.json" class="sr-only-file"><button type="button" class="btn sm" id="import-undo" hidden>↶ 撤销上次导入</button><button type="button" class="btn sm" id="planner-clear">清除本机 DDL 数据</button></div>
    </div>
   </div>
   <div class="week-panel panel"><div class="panel-top"><div><div class="flag" style="font-size:10px">WEEK AT A GLANCE</div><h3>接下来七天，一眼看清。</h3></div><div class="buttonrow"><button class="btn sm" type="button" id="week-prev" aria-label="上一周">←</button><button class="btn sm" type="button" id="week-today">回到本周</button><button class="btn sm" type="button" id="week-next" aria-label="下一周">→</button></div></div><div class="week-board" id="week-board" aria-label="七天任务安排"></div><p class="hint">这是按设备当地日期显示的七日视图；点击日期可快速选中创建任务的日期。</p></div>
@@ -192,18 +192,19 @@ const shortDate=(s)=>{const [y,m,d]=s.split('-').map(Number);return `${m}/${d}`;
 const localDeadlineValue=(iso)=>{if(!iso)return '';const d=new Date(iso);if(!Number.isFinite(d.getTime()))return '';return `${isoDate(d)}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
 const longDeadline=(iso)=>iso?new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'short',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(iso)):'尚未设置截止时间';
 const seed=()=>{
-  const comp='demo_comp2211',home='demo_personal';
-  const projects=[{id:comp,name:'COMP2211 / Networks',description:'脱敏的 Security coursework 规划示例 · 题目和答案不在这里',deadline:'2026-11-05T14:00:00Z'}, {id:home,name:'我的日常计划',description:'为学习和生活留一点空间',deadline:null}];
+  // Demo dates are relative to today so a first visit never opens on an already-expired project.
+  const comp='demo_comp2211',home='demo_personal',today=isoDate(new Date()),due=new Date();due.setDate(due.getDate()+10);due.setHours(14,0,0,0);
+  const projects=[{id:comp,name:'示例：课程汇报',description:'示例项目 · 可以直接修改任务，或在“项目设置”中改名、删除',deadline:due.toISOString()}, {id:home,name:'我的日常计划',description:'为学习和生活留一点空间',deadline:null}];
   const data=[
-    ['复核已完成的 C02 笔记','2026-10-24','medium','复核',25,true],
-    ['梳理 C05 爬虫练习的操作步骤','2026-10-25','high','任务',45,false],
-    ['浏览可选挑战并标记难度','2026-10-26','high','任务',25,false],
-    ['完成一个基础挑战并整理证据','2026-10-28','high','任务',60,false],
-    ['复查 Write-up 的格式与字数','2026-11-02','medium','复核',45,false],
-    ['导出并检查最终提交文件','2026-11-04','high','复核',30,false],
-    ['确认 Ultra 上传成功','2026-11-05','high','复核',15,false]
+    ['读懂作业要求与评分标准',-1,'medium','任务',25,true],
+    ['列出汇报提纲与时间分配',0,'high','任务',45,false],
+    ['查找并记录 3 个可靠来源',1,'high','任务',45,false],
+    ['完成幻灯片初稿',3,'high','任务',90,false],
+    ['请同学试听并记下反馈',6,'medium','复核',30,false],
+    ['根据反馈修改并计时排练',8,'medium','任务',45,false],
+    ['提交最终文件并确认上传成功',10,'high','复核',15,false]
   ];
-  const tasks=data.map(([name,date,priority,category,minutes,done])=>({id:uid(),projectId:comp,name,date,priority,category,minutes,notes:'',done,createdAt:new Date().toISOString()}));
+  const tasks=data.map(([name,shift,priority,category,minutes,done])=>({id:uid(),projectId:comp,name,date:dayPlus(today,shift),priority,category,minutes,notes:'',done,createdAt:new Date().toISOString()}));
   tasks.push({id:uid(),projectId:home,name:'安排一段真正的休息时间',date:isoDate(new Date()),priority:'low',category:'生活',minutes:25,notes:'休息也值得列进计划。',done:false,createdAt:new Date().toISOString()});
   return {version:3,projects,tasks,activeId:comp};
 };
@@ -211,7 +212,8 @@ const validProject=(p)=>p&&typeof p.id==='string'&&p.id.length<=100&&typeof p.na
 const validTask=(t)=>t&&typeof t.id==='string'&&t.id.length<=100&&typeof t.projectId==='string'&&typeof t.name==='string'&&t.name.trim().length>0&&t.name.length<=100&&validDate(t.date)&&PRIORITIES.includes(t.priority)&&TYPES.includes(t.category)&&typeof t.done==='boolean'&&(t.minutes===undefined||(Number.isInteger(t.minutes)&&t.minutes>=5&&t.minutes<=480))&&(t.notes===undefined||(typeof t.notes==='string'&&t.notes.length<=500));
 const migrateOld=(old)=>{
   if(!Array.isArray(old)||old.length>500)return null;
-  const data=seed();data.tasks=old.map(t=>({...t,projectId:'demo_comp2211',minutes:25,notes:'',createdAt:new Date().toISOString()}));
+  // v0.2 only planned COMP2211, so migrated tasks keep that original project.
+  const data=seed();data.projects[0]={id:'demo_comp2211',name:'COMP2211 / Networks',description:'脱敏的 Security coursework 规划示例 · 题目和答案不在这里',deadline:'2026-11-05T14:00:00Z'};data.tasks=old.map(t=>({...t,projectId:'demo_comp2211',minutes:25,notes:'',createdAt:new Date().toISOString()}));
   if(!data.tasks.every(validTask))return null;
   try{return validateWorkspace(data);}catch(e){return null;}
 };
@@ -219,10 +221,12 @@ function validateWorkspace(data){
  if(!data||!Array.isArray(data.projects)||!Array.isArray(data.tasks)||!data.projects.length||data.projects.length>40||data.tasks.length>500||!data.projects.every(validProject)||!data.tasks.every(validTask))throw Error('备份内容不符合要求');
  const projectIds=data.projects.map(p=>p.id),taskIds=data.tasks.map(t=>t.id);
  if(new Set(projectIds).size!==projectIds.length||new Set(taskIds).size!==taskIds.length||data.tasks.some(t=>!projectIds.includes(t.projectId)))throw Error('项目或任务 ID 无效');
- return {version:3,projects:data.projects.map(p=>({...p,description:p.description||'',deadline:p.deadline||null})),tasks:data.tasks.map(t=>({...t,notes:t.notes||'',minutes:t.minutes||25,createdAt:t.createdAt||new Date().toISOString()})),activeId:projectIds.includes(data.activeId)?data.activeId:projectIds[0]};
+ // Keep only known fields (imported files cannot carry unused data into storage) and always store createdAt as an ISO string.
+ const now=new Date().toISOString(),stamp=v=>typeof v==='string'&&v.length<=40&&Number.isFinite(Date.parse(v))?new Date(v).toISOString():now;
+ return {version:3,projects:data.projects.map(p=>({id:p.id,name:p.name,description:p.description||'',deadline:p.deadline||null})),tasks:data.tasks.map(t=>({id:t.id,projectId:t.projectId,name:t.name,date:t.date,priority:t.priority,category:t.category,minutes:t.minutes||25,notes:t.notes||'',done:t.done,createdAt:stamp(t.createdAt)})),activeId:projectIds.includes(data.activeId)?data.activeId:projectIds[0]};
 }
 // Unreadable saved data is never replaced silently: the original text is kept first, then whatever still validates is restored.
-const RECOVERY='peachworks_v03_recovery';
+const RECOVERY='peachworks_v03_recovery',BEFORE_IMPORT='peachworks_v03_before_import',GUEST_NAME='peachworks_demo_guest_name';
 let recoveryRaw='',recoverySavedAt='',recoveryResult=null,saveBlocked=false;
 const clip=(raw,limits)=>{if(!raw||typeof raw!=='object'||Array.isArray(raw))return raw;const copy={...raw};for(const [key,max] of Object.entries(limits))if(typeof copy[key]==='string')copy[key]=copy[key].slice(0,max);return copy;};
 function repairWorkspace(data){
@@ -254,6 +258,9 @@ function renderRecovery(){
   :recoveryResult?(recoveryResult.projects?`上次保存的 DDL 数据有部分无法读取。已恢复 ${recoveryResult.projects} 个项目、${recoveryResult.tasks} 个任务；原始数据已另存一份副本，请下载核对是否缺少内容。`:'上次保存的 DDL 数据无法读取，当前显示示例项目。原始数据已另存一份副本，请下载保留，修正后可用“导入备份”恢复。')
   :`浏览器中还保留着一份 ${when} 无法读取的 DDL 原始数据副本。确认已下载或不再需要后，可以删除。`;
 }
+function readBeforeImport(){try{const saved=JSON.parse(localStorage.getItem(BEFORE_IMPORT)||'null');return saved&&typeof saved==='object'?saved:null;}catch(e){return null;}}
+function renderImportUndo(){const button=$('#import-undo'),saved=readBeforeImport();button.hidden=!saved;if(!saved)return;const at=new Date(saved.savedAt);button.title=Number.isFinite(at.getTime())?`恢复到 ${at.toLocaleString('zh-CN')} 导入前的数据`:'恢复到导入前的数据';}
+function resetListView(){taskFilter='all';searchTerm='';$('#task-search').value='';$$('.filter').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter==='all')));}
 let state=loadWorkspace();let taskFilter='all';let searchTerm='';let sortOrder='smart';let focusIndex=0;let weekOffset=0;let editingProject=null;let editingTask=null;let toastTimer;
 function toast(message){const node=$('#toast');node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),2900);}
 function save(){if(saveBlocked){toast('请先下载上方的 DDL 原始数据副本，之后的修改才会保存。');return false;}try{validateWorkspace(state);}catch(e){toast(`数据未通过检查，本次没有保存：${e.message}`);return false;}try{localStorage.setItem(STORAGE,JSON.stringify(state));return true;}catch(e){toast('无法自动保存！请尝试导出 JSON 备份。');return false;}}
@@ -265,7 +272,7 @@ function sorted(list,method='smart'){
    smart:(a,b)=>Number(a.done)-Number(b.done)||a.date.localeCompare(b.date)||priorityOrder[a.priority]-priorityOrder[b.priority]||a.name.localeCompare(b.name,'zh'),
    date:(a,b)=>a.date.localeCompare(b.date)||Number(a.done)-Number(b.done),
    priority:(a,b)=>priorityOrder[a.priority]-priorityOrder[b.priority]||a.date.localeCompare(b.date),
-   recent:(a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')
+   recent:(a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))
  };return copy.sort(comparisons[method]||comparisons.smart);
 }
 function renderProjectSelect(){const select=$('#project-select');select.replaceChildren();for(const p of state.projects){const opt=el('option','',p.name);opt.value=p.id;select.append(opt);}select.value=project().id;$('#project-description').textContent=project().description||'给这个项目设定一个可以完成的小目标。';}
@@ -304,15 +311,21 @@ function sharePlannerFocusTasks(){document.dispatchEvent(new CustomEvent('peachw
 document.addEventListener('peachworks:planner-request',sharePlannerFocusTasks);
 function render(){renderProjectSelect();renderOverview();renderTaskList();renderFocus();renderWeek();sharePlannerFocusTasks();}
 function openProjectDialog(mode){editingProject=mode==='edit'?project().id:null;const p=editingProject?project():null;$('#project-dialog-title').textContent=p?'编辑项目':'创建新项目';$('#project-name').value=p?.name||'';$('#project-detail').value=p?.description||'';$('#project-deadline').value=localDeadlineValue(p?.deadline||null);$('#project-dialog').showModal();$('#project-name').focus();}
-function openTaskDialog(t){editingTask=t.id;$('#edit-name').value=t.name;$('#edit-date').value=t.date;$('#edit-priority').value=t.priority;$('#edit-category').value=t.category;$('#edit-minutes').value=t.minutes||25;$('#edit-notes').value=t.notes||'';$('#task-dialog').showModal();$('#edit-name').focus();}
+function openTaskDialog(t){editingTask=t.id;$('#edit-name').value=t.name;$('#edit-date').value=t.date;$('#edit-priority').value=t.priority;$('#edit-category').value=t.category;$('#edit-minutes').value=t.minutes||25;$('#edit-minutes').step=(t.minutes||25)%5?'1':'5';$('#edit-notes').value=t.notes||'';$('#task-dialog').showModal();$('#edit-name').focus();}
 function download(name,body,type){const blob=new Blob([body],{type});const url=URL.createObjectURL(blob);const anchor=el('a');anchor.href=url;anchor.download=name;document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);}
 function csvCell(value){let str=String(value??'');if(/^[\s]*[=+\-@]/.test(str))str="'"+str;return '"'+str.replaceAll('"','""')+'"';}
 function safeFileBase(name){return (name||'peachworks').replace(/[^\w\u4e00-\u9fff-]+/g,'-').slice(0,45)||'peachworks';}
-function escapeIcs(v){return String(v||'').replaceAll('\\','\\\\').replaceAll('\n','\\n').replaceAll(',','\\,').replaceAll(';','\\;');}
+function escapeIcs(v){return String(v||'').replaceAll('\\','\\\\').replace(/\r\n|\r|\n/g,'\\n').replaceAll(',','\\,').replaceAll(';','\\;');}
+// RFC 5545: fold lines longer than 75 UTF-8 octets without splitting a character.
+function foldIcs(line){const enc=new TextEncoder();if(enc.encode(line).length<=75)return line;const parts=[];let current='',size=0;for(const ch of line){const n=enc.encode(ch).length;if(size+n>75){parts.push(current);current=' '+ch;size=1+n;}else{current+=ch;size+=n;}}parts.push(current);return parts.join('\r\n');}
 function exportCalendar(){const p=project(),ts=thisTasks().filter(t=>!t.done);if(!ts.length){toast('当前项目没有未完成任务');return;}const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Peachworks//DDL Planner v0.3//ZH','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
  for(const t of ts){const now=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');lines.push('BEGIN:VEVENT',`UID:${t.id.replace(/[^\w-]/g,'')}@peachworks.local`,`DTSTAMP:${now}`,`DTSTART;VALUE=DATE:${t.date.replaceAll('-','')}`,`SUMMARY:${escapeIcs(t.name)}`,`DESCRIPTION:${escapeIcs((t.notes||'')+' | 项目: '+p.name)}`,'END:VEVENT');}
- lines.push('END:VCALENDAR');download(`${safeFileBase(p.name)}-calendar.ics`,lines.join('\r\n')+'\r\n','text/calendar;charset=utf-8');toast('已导出日历文件，导入前请确认日期');}
-$('#year').textContent=new Date().getFullYear();$('#task-date').value=isoDate(new Date());render();renderRecovery();if(!saveBlocked)save();
+ lines.push('END:VCALENDAR');download(`${safeFileBase(p.name)}-calendar.ics`,lines.map(foldIcs).join('\r\n')+'\r\n','text/calendar;charset=utf-8');toast('已导出日历文件，导入前请确认日期');}
+$('#year').textContent=new Date().getFullYear();$('#task-date').value=isoDate(new Date());render();renderRecovery();renderImportUndo();if(!saveBlocked)save();
+// Countdown, overdue counts and the default task date follow the clock while the page stays open.
+let renderedDay=isoDate(new Date());
+function refreshClock(){const day=isoDate(new Date());if(day===renderedDay)return renderOverview();if($('#task-date').value===renderedDay)$('#task-date').value=day;renderedDay=day;render();}
+setInterval(refreshClock,60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshClock();});
 $('#project-select').addEventListener('change',e=>{state.activeId=e.target.value;focusIndex=0;weekOffset=0;save();render();});
 $('#project-create').addEventListener('click',()=>openProjectDialog('new'));
 $('#project-edit').addEventListener('click',()=>openProjectDialog('edit'));
@@ -329,15 +342,18 @@ $('#week-prev').addEventListener('click',()=>{weekOffset--;renderWeek();});$('#w
 $('#export-json').addEventListener('click',()=>{download('peachworks-all-projects-backup.json',JSON.stringify({...state,exportedAt:new Date().toISOString(),app:'Peachworks'},null,2),'application/json;charset=utf-8');toast('全部项目备份已下载');});
 $('#export-csv').addEventListener('click',()=>{const rows=[['项目','任务','计划日期','优先级','分类','预计分钟','完成','备注'],...thisTasks().map(t=>[project().name,t.name,t.date,priorityLabels[t.priority],t.category,t.minutes||25,t.done?'是':'否',t.notes||''])];download(`${safeFileBase(project().name)}-tasks.csv`,'\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8');toast('CSV 已导出');});
 $('#export-ics').addEventListener('click',exportCalendar);
-$('#import-json').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>2000000)throw Error('文件超过2MB');const raw=JSON.parse(await file.text());const fresh=Array.isArray(raw)?migrateOld(raw):Array.isArray(raw.projects)?validateWorkspace(raw):migrateOld(raw.tasks);if(!fresh)throw Error('备份格式不支持');if(!confirm(`导入包含 ${fresh.projects.length} 个项目、${fresh.tasks.length} 个任务，将覆盖当前所有数据。确定吗？`))return;state=fresh;focusIndex=0;weekOffset=0;taskFilter='all';searchTerm='';$('#task-search').value='';$$('.filter').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter==='all')));save();render();toast('备份导入成功');}catch(err){toast(`导入失败：${err.message}`);}finally{e.target.value='';}});
+$('#import-json').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>2000000)throw Error('文件超过2MB');const raw=JSON.parse(await file.text());const fresh=Array.isArray(raw)?migrateOld(raw):raw&&typeof raw==='object'&&Array.isArray(raw.projects)?validateWorkspace(raw):migrateOld(raw?.tasks);if(!fresh)throw Error('备份格式不支持');if(!confirm(`导入包含 ${fresh.projects.length} 个项目、${fresh.tasks.length} 个任务，将覆盖当前所有数据（导入后可以撤销）。确定吗？`))return;let undoSaved=false;try{localStorage.setItem(BEFORE_IMPORT,JSON.stringify({savedAt:new Date().toISOString(),data:state}));undoSaved=true;}catch(e){}if(!undoSaved&&!confirm('浏览器空间不足，无法保留导入前的数据，导入后将不能撤销。仍要继续吗？'))return;state=fresh;focusIndex=0;weekOffset=0;resetListView();save();render();renderImportUndo();toast(undoSaved?'备份导入成功，可用“撤销上次导入”恢复':'备份导入成功');}catch(err){toast(`导入失败：${err.message}`);}finally{e.target.value='';}});
 // Another tab saved: adopt its data so this tab never writes back a stale copy over newer changes.
 window.addEventListener('storage',e=>{
+ if(e.key===BEFORE_IMPORT||e.key===null)renderImportUndo();
  if(e.key!==STORAGE&&e.key!==null)return;
  let next;try{const raw=localStorage.getItem(STORAGE);if(!raw)return;next=validateWorkspace(JSON.parse(raw));}catch(err){return;}
  const keep=state.activeId;state=next;if(state.projects.some(p=>p.id===keep))state.activeId=keep;
  render();toast('已同步其他页面的 DDL 修改');
 });
 $('#planner-recovery-download').addEventListener('click',()=>{if(!recoveryRaw)return;download(`peachworks-ddl-recovery-${isoDate(new Date())}.json`,recoveryRaw,'application/json;charset=utf-8');if(saveBlocked){saveBlocked=false;recoveryRaw='';recoveryResult=null;save();renderRecovery();toast('原始数据已下载，之后的修改会正常保存');}else toast('原始数据副本已下载');});
+$('#import-undo').addEventListener('click',()=>{let previous;try{previous=validateWorkspace(readBeforeImport()?.data);}catch(e){return toast('导入前的数据无法读取，未做任何修改');}if(!confirm(`恢复到导入前的数据（${previous.projects.length} 个项目、${previous.tasks.length} 个任务）？当前数据会被替换。`))return;state=previous;focusIndex=0;weekOffset=0;resetListView();if(save()){try{localStorage.removeItem(BEFORE_IMPORT);}catch(e){}}render();renderImportUndo();toast('已恢复到导入前的数据');});
+$('#planner-clear').addEventListener('click',()=>{if(!confirm('清除这个浏览器里的全部 DDL 项目、任务、访客称呼，以及恢复和撤销用的副本？此操作不能撤销，建议先点“全部备份 JSON”。专注记录和演示草稿不受影响。'))return;for(const key of [STORAGE,OLD_STORAGE,RECOVERY,BEFORE_IMPORT,GUEST_NAME]){try{localStorage.removeItem(key);}catch(e){}}saveBlocked=false;recoveryRaw='';recoveryResult=null;state=seed();focusIndex=0;weekOffset=0;resetListView();render();renderRecovery();renderImportUndo();$('#guest-greeting').textContent='访客的工作台';toast('本机 DDL 数据已清除；示例项目不会保存，直到你做出修改');});
 $('#planner-recovery-discard').addEventListener('click',()=>{if(!confirm('删除后无法找回这份原始数据。确定已经下载或不再需要吗？'))return;try{localStorage.removeItem(RECOVERY);}catch(e){}recoveryRaw='';recoveryResult=null;if(saveBlocked){saveBlocked=false;save();}renderRecovery();toast('副本已删除');});
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();$('#task-search').focus();}});
 
