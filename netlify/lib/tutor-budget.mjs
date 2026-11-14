@@ -23,7 +23,7 @@ export async function reserveTutor(store,{provider,limit,requestId,now,role='gue
   const blocked=quota.remaining===0;
   if(!blocked)ids.push(requestId);
   const result=await store.setJSON(stateKey,next,entry?{onlyIfMatch:entry.etag}:{onlyIfNew:true});
-  if(result.modified){if(blocked){const e=tutorError('这个 AI 今天的访客共享次数已用完。请明天再试，或手动选择其他已启用的 AI。',429,'DAILY_LIMIT');e.quota=quota;throw e;}return {...quota,remaining:quota.remaining-1};}
+  if(result.modified){if(blocked){const e=tutorError('这个 AI 今天的访客共享次数已用完，请在伦敦时间零点后再试。',429,'DAILY_LIMIT');e.quota=quota;throw e;}return {...quota,remaining:quota.remaining-1};}
  }
  throw tutorError('当前提问较多，请稍后手动重试。',429,'QUOTA_BUSY');
 }
