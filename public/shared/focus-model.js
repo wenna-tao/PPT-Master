@@ -1,4 +1,6 @@
 export const FOCUS_KEY='peachworks_focus_v1';
+// Enough completed rounds for yearly grove statistics (about 3 rounds a day).
+export const HISTORY_LIMIT=2000;
 export function validMinutes(value){const n=Number(value);if(!Number.isInteger(n)||n<25||n>120)throw new Error('专注时长须为 25–120 分钟的整数。');return n;}
 function cleanTask(task){
   if(task===null||task===undefined)return null;
@@ -15,7 +17,7 @@ export function tickFocus(state,now){
   const left=remainingMs(state,now);
   if(left>0)return {...state,remainingMs:left};
   const entry={id:state.id,minutes:state.minutes,completedAt:state.endsAt,taskTitle:state.task?.title||'',projectName:state.task?.projectName||''};
-  const history=state.history.some(h=>h.id===entry.id)?state.history:[...state.history,entry].slice(-240);
+  const history=state.history.some(h=>h.id===entry.id)?state.history:[...state.history,entry].slice(-HISTORY_LIMIT);
   return {...state,status:'completed',remainingMs:0,endsAt:null,history};
 }
 export function startFocus(state,now,id,task=null){
@@ -38,7 +40,7 @@ export function hydrateFocus(raw,now){
   if(state.status==='running'){
     if(typeof raw.endsAt!=='number'||!Number.isFinite(raw.endsAt)||raw.endsAt<0)throw new Error('专注结束时间无效。');state.endsAt=raw.endsAt;
   }
-  if(!Array.isArray(raw.history)||raw.history.length>240)throw new Error('专注历史格式无效。');
+  if(!Array.isArray(raw.history)||raw.history.length>HISTORY_LIMIT)throw new Error('专注历史格式无效。');
   const ids=new Set();
   state.history=raw.history.filter(h=>{
     if(!h||typeof h.id!=='string'||!h.id||h.id.length>100||ids.has(h.id)||typeof h.completedAt!=='number'||!Number.isFinite(h.completedAt)||h.completedAt<0||!Number.isInteger(h.minutes)||h.minutes<25||h.minutes>120||typeof h.taskTitle!=='string'||h.taskTitle.length>100||typeof h.projectName!=='string'||h.projectName.length>70)return false;
