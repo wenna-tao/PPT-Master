@@ -1,5 +1,7 @@
 import './focus-background.js';
 import './focus-display.js';
+import './focus-grove.js';
+import {WITHERED_KEY,witheredEntry,hydrateWithered,appendWithered} from './shared/grove-model.js';
 import {FOCUS_KEY,initialFocus,validMinutes,remainingMs,startFocus,pauseFocus,resetFocus,setFocusMinutes,tickFocus,hydrateFocus,formatFocus,todayFocus} from './shared/focus-model.js';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -20,6 +22,13 @@ function announce(text,error=false){$$('[data-focus-announcement]').forEach(n=>{
 function save(){
   try{localStorage.setItem(FOCUS_KEY,JSON.stringify(focus));storageAvailable=true;}
   catch{storageAvailable=false;announce('当前浏览器无法保存专注记录。请保持本页打开，刷新后可能无法恢复。',true);}
+  document.dispatchEvent(new Event('peachworks:focus-saved'));
+}
+// Confirmed give-up after the grace period leaves a withered tree in the grove (kept apart from completed history).
+function recordWithered(state){
+  const entry=witheredEntry(state,Date.now());if(!entry)return false;
+  try{const list=hydrateWithered(JSON.parse(localStorage.getItem(WITHERED_KEY)||'[]'));localStorage.setItem(WITHERED_KEY,JSON.stringify(appendWithered(list,entry)));}catch{return false;}
+  return true;
 }
 function readSaved(){
   try{
@@ -133,7 +142,8 @@ $$('[data-focus-action]').forEach(button=>button.addEventListener('click',()=>{
   }
   if(action==='cancel-reset')resetDialog.close();
   if(action==='confirm-reset'){
-    advance(true);focus=resetFocus(focus);save();paint(true);syncWake();resetDialog.close();announce('本轮已重置，已完成的专注记录已保留。');
+    advance(true);const withered=recordWithered(focus);focus=resetFocus(focus);save();paint(true);syncWake();resetDialog.close();
+    announce(withered?'已放弃这一轮，桃园里留下了一棵枯树。已完成的专注记录都还在。':'本轮已重置，已完成的专注记录已保留。');
   }
 }));
 $('#focus-minutes').addEventListener('input',e=>changeMinutes(e.target.value));
